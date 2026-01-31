@@ -1,0 +1,204 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: true
+
+jobs:
+  # Determine the next version based on commit messages
+  version:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      new_version: ${{ steps.calculate.outputs.new_version }}
+      should_release: ${{ steps.calculate.outputs.should_release }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Calculate next version
+      id: calculate
+      run: |
+        # Get the latest tag or default to 0.0.0
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "Latest tag: $LATEST_TAG"
+        
+        # Parse the version (remove 'v' prefix)
+        VERSION=${LATEST_TAG#v}
+        MAJOR=$(echo $VERSION | cut -d. -f1)
+        MINOR=$(echo $VERSION | cut -d. -f2)
+        PATCH=$(echo $VERSION | cut -d. -f3)
+        
+        # Get commits since last tag
+        if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+          COMMITS=$(git log ${LATEST_TAG}..HEAD --oneline)
+        else
+          COMMITS=$(git log --oneline)
+        fi
+        
+        echo "Commits since last tag:"
+        echo "$COMMITS"
+        
+        # Determine version bump type
+        BUMP_TYPE="patch"
+        
+        # Check for breaking changes (!)
+        if echo "$COMMITS" | grep -qE '.*!:'; then
+          BUMP_TYPE="major"
+        # Check for features (feat:)
+        elif echo "$COMMITS" | grep -qE '^[a-f0-9]+ feat:'; then
+          BUMP_TYPE="minor"
+        fi
+        
+        echo "Bump type: $BUMP_TYPE"
+        
+        # Calculate new version
+        case $BUMP_TYPE in
+          major)
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            ;;
+          minor)
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            ;;
+          patch)
+            PATCH=$((PATCH + 1))
+            ;;
+        esac
+        
+        NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+        echo "New version: $NEW_VERSION"
+        
+        # Check if there are any commits to release
+        if [ -z "$COMMITS" ]; then
+          echo "No new commits to release"
+          echo "should_release=false" >> $GITHUB_OUTPUT
+        else
+          echo "should_release=true" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+  build:
+    runs-on: windows-latest
+    needs: [version]
+    if: always() && (needs.version.result == 'skipped' || needs.version.outputs.should_release == 'true')
+    
+    strategy:
+      matrix:
+        platform: [x64, arm64]
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: Publish NativeAOT
+      run: |
+        dotnet publish Notepad/Notepad.csproj `
+          --configuration Release `
+          --runtime win-${{ matrix.platform }} `
+          --output ./publish-${{ matrix.platform }} `
+          --self-contained true `
+          -p:PublishAot=true
+          
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: notepad-${{ matrix.platform }}
+        path: ./publish-${{ matrix.platform }}
+        retention-days: 7
+
+  create-installer:
+    runs-on: windows-latest
+    needs: [version, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.version.outputs.should_release == 'true'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Download x64 artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: notepad-x64
+        path: ./publish
+        
+    - name: Create installer with Inno Setup
+      uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
+      with:
+        path: installer.iss
+        options: /DMyAppVersion=${{ needs.version.outputs.new_version }} /O"./installer"
+        
+    - name: Upload installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: installer
+        path: ./installer/*.exe
+        retention-days: 30
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [version, build, create-installer]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.version.outputs.should_release == 'true'
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+        
+    - name: Create zip archives
+      run: |
+        cd artifacts
+        for dir in notepad-*/; do
+          platform=$(basename "$dir")
+          zip -r "${platform}.zip" "$dir"
+        done
+    
+    - name: Create and push tag
+      run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git tag -a "v${{ needs.version.outputs.new_version }}" -m "Release v${{ needs.version.outputs.new_version }}"
+        git push origin "v${{ needs.version.outputs.new_version }}"
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ needs.version.outputs.new_version }}
+        name: Notepad v${{ needs.version.outputs.new_version }}
+        draft: false
+        prerelease: false
+        files: |
+          artifacts/*.zip
+          artifacts/installer/*.exe
+        generate_release_notes: true

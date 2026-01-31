@@ -1,0 +1,58 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build solution
+      run: dotnet build --configuration Debug --no-restore
+      
+    - name: Build main app for tests (win-x64)
+      run: dotnet build Notepad/Notepad.csproj --configuration Debug --runtime win-x64 --no-restore
+      
+    - name: Run UI tests
+      run: |
+        dotnet test Notepad.Tests/Notepad.Tests.csproj `
+          --configuration Debug `
+          --no-build `
+          --logger "trx;LogFileName=test-results.trx" `
+          --logger "console;verbosity=detailed" `
+          -- MSTest.Parallelize.Workers=1
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: '**/TestResults/**/*.trx'
+        retention-days: 30
+        
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Test Results
+        path: '**/TestResults/**/*.trx'
+        reporter: dotnet-trx

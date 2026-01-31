@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Notepad.DefaultPlugins.RecentFiles.RecentFilesPluginControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Notepad.DefaultPlugins.RecentFiles"
+    Visibility="Collapsed">
+
+    <Grid>
+        <Border Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Width="600"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Center"
+                Margin="0,80,0,0"
+                Padding="0">
+            <Border.Shadow>
+                <ThemeShadow/>
+            </Border.Shadow>
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="SearchBox"
+                             Grid.Column="0"
+                             PlaceholderText="Search recent files..."
+                             BorderThickness="0"
+                             Padding="12"
+                             FontSize="14"
+                             TextChanged="SearchBox_TextChanged"
+                             PreviewKeyDown="SearchBox_PreviewKeyDown"/>
+                    <Button x:Name="ClearAllButton"
+                            Grid.Column="1"
+                            ToolTipService.ToolTip="Clear all recent files"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="8"
+                            Margin="0,0,4,0"
+                            Click="ClearAllButton_Click">
+                        <FontIcon Glyph="&#xE74D;" FontSize="14"/>
+                    </Button>
+                </Grid>
+                <ScrollViewer x:Name="ResultsScroller" MaxHeight="350" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="ResultsPanel"/>
+                </ScrollViewer>
+                <Border x:Name="EmptyMessage" 
+                        Visibility="Collapsed"
+                        Padding="12">
+                    <TextBlock Text="No recent files found"
+                               Opacity="0.6"
+                               HorizontalAlignment="Center"/>
+                </Border>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
