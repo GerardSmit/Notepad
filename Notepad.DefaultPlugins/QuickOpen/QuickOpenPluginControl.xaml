@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Notepad.DefaultPlugins.QuickOpen.QuickOpenPluginControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Notepad.DefaultPlugins.QuickOpen"
+    Visibility="Collapsed">
+
+    <Grid>
+        <Border Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Width="500"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Center"
+                Margin="0,80,0,0"
+                Padding="0">
+            <Border.Shadow>
+                <ThemeShadow/>
+            </Border.Shadow>
+            <StackPanel>
+                <TextBox x:Name="SearchBox"
+                         PlaceholderText="Type to search open files..."
+                         BorderThickness="0"
+                         Padding="12"
+                         FontSize="14"
+                         TextChanged="SearchBox_TextChanged"
+                         PreviewKeyDown="SearchBox_PreviewKeyDown"/>
+                <StackPanel x:Name="ResultsPanel" MaxHeight="300"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

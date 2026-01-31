@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Notepad.DefaultPlugins.FindReplace.FindReplacePluginControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Visibility="Collapsed"
+    VerticalAlignment="Top"
+    HorizontalAlignment="Right"
+    Margin="0,32,16,0">
+
+    <Border Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
+            BorderThickness="1,0,1,1"
+            CornerRadius="0,0,6,6"
+            Padding="8">
+        <Border.Shadow>
+            <ThemeShadow/>
+        </Border.Shadow>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Expand/Collapse Toggle -->
+            <Button Grid.Column="0" Grid.Row="0"
+                    VerticalAlignment="Top"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="4"
+                    Click="FindReplaceToggle_Click"
+                    ToolTipService.ToolTip="Toggle Replace">
+                <FontIcon x:Name="FindReplaceToggleIcon" Glyph="&#xE76C;" FontSize="12"/>
+            </Button>
+
+            <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Spacing="6">
+                <!-- Find Row -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBox x:Name="FindTextBox"
+                             Grid.Column="0"
+                             PlaceholderText="Find"
+                             Width="220"
+                             TabIndex="1"
+                             TextChanged="FindTextBox_TextChanged"
+                             PreviewKeyDown="FindTextBox_PreviewKeyDown"/>
+                    
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="6,0,0,0">
+                        <Button Background="Transparent"
+                                BorderThickness="0"
+                                Padding="6"
+                                TabIndex="6"
+                                Click="FindPrevious_Click"
+                                ToolTipService.ToolTip="Previous Match (Shift+Enter)">
+                            <FontIcon Glyph="&#xE70E;" FontSize="12"/>
+                        </Button>
+                        <Button Background="Transparent"
+                                BorderThickness="0"
+                                Padding="6"
+                                TabIndex="5"
+                                Click="FindNext_Click"
+                                ToolTipService.ToolTip="Next Match (Enter)">
+                            <FontIcon Glyph="&#xE70D;" FontSize="12"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Replace Row (collapsed by default) -->
+                <Grid x:Name="ReplaceRow" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBox x:Name="ReplaceTextBox"
+                             Grid.Column="0"
+                             PlaceholderText="Replace"
+                             Width="220"
+                             TabIndex="2"
+                             PreviewKeyDown="ReplaceTextBox_PreviewKeyDown"/>
+                    
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="6,0,0,0">
+                        <Button Background="Transparent"
+                                BorderThickness="0"
+                                Padding="6"
+                                TabIndex="3"
+                                Click="Replace_Click"
+                                ToolTipService.ToolTip="Replace (Enter)">
+                            <FontIcon Glyph="&#xE8AC;" FontSize="12"/>
+                        </Button>
+                        <Button Background="Transparent"
+                                BorderThickness="0"
+                                Padding="6"
+                                TabIndex="4"
+                                Click="ReplaceAll_Click"
+                                ToolTipService.ToolTip="Replace All">
+                            <FontIcon Glyph="&#xE8B3;" FontSize="12"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Options Row -->
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <ToggleButton x:Name="MatchCaseToggle"
+                                  ToolTipService.ToolTip="Match Case (Alt+C)"
+                                  Padding="6,4"
+                                  MinWidth="0"
+                                  Click="FindOption_Changed">
+                        <TextBlock Text="Aa" FontSize="11" FontWeight="SemiBold"/>
+                    </ToggleButton>
+                    <ToggleButton x:Name="MatchWholeWordToggle"
+                                  ToolTipService.ToolTip="Match Whole Word (Alt+W)"
+                                  Padding="6,4"
+                                  MinWidth="0"
+                                  Click="FindOption_Changed">
+                        <TextBlock Text="Ab" FontSize="11" FontWeight="SemiBold" TextDecorations="Underline"/>
+                    </ToggleButton>
+                    <ToggleButton x:Name="UseRegexToggle"
+                                  ToolTipService.ToolTip="Use Regular Expression (Alt+R)"
+                                  Padding="6,4"
+                                  MinWidth="0"
+                                  Click="FindOption_Changed">
+                        <TextBlock Text=".*" FontSize="11" FontWeight="SemiBold"/>
+                    </ToggleButton>
+                    <ToggleButton x:Name="InSelectionToggle"
+                                  ToolTipService.ToolTip="Find in Selection (Alt+L)"
+                                  Padding="6,4"
+                                  MinWidth="0"
+                                  Click="InSelection_Changed">
+                        <FontIcon Glyph="&#xE8C8;" FontSize="11"/>
+                    </ToggleButton>
+                    
+                    <TextBlock x:Name="MatchCountText" 
+                               VerticalAlignment="Center" 
+                               FontSize="11" 
+                               Opacity="0.7"
+                               Margin="8,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Close Button -->
+            <Button Grid.Column="2" Grid.Row="0"
+                    VerticalAlignment="Top"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="4"
+                    Click="Close_Click"
+                    ToolTipService.ToolTip="Close (Escape)">
+                <FontIcon Glyph="&#xE711;" FontSize="12"/>
+            </Button>
+        </Grid>
+    </Border>
+</UserControl>

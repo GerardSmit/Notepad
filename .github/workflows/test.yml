@@ -1,0 +1,75 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      checks: write
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Enable Developer Mode
+      shell: powershell
+      run: |
+        reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d "1"
+        
+    - name: Install WinAppDriver
+      shell: powershell
+      run: |
+        Invoke-WebRequest -Uri 'https://github.com/microsoft/WinAppDriver/releases/download/v1.2.1/WindowsApplicationDriver_1.2.1.msi' -OutFile 'C:\Temp\WinAppDriver.msi'
+        Start-Process msiexec.exe -ArgumentList '/i', 'C:\Temp\WinAppDriver.msi', '/quiet', '/norestart' -Wait
+        
+    - name: Start WinAppDriver
+      shell: powershell
+      run: |
+        Start-Process 'C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe' -WindowStyle Hidden
+        Start-Sleep -Seconds 3
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build solution for tests
+      run: dotnet build --configuration Debug --no-restore -p:Platform=x64
+      
+    - name: Build and run UI tests
+      run: |
+        dotnet test Notepad.Tests/Notepad.Tests.csproj `
+          --configuration Debug `
+          --no-build `
+          -p:Platform=x64 `
+          --logger "trx;LogFileName=test-results.trx" `
+          --logger "console;verbosity=detailed" `
+          -- MSTest.Parallelize.Workers=1
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: '**/TestResults/**/*.trx'
+        retention-days: 30
+        
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      with:
+        name: Test Results
+        path: '**/TestResults/**/*.trx'
+        reporter: dotnet-trx

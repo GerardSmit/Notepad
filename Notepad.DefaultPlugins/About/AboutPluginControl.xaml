@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Notepad.DefaultPlugins.About.AboutPluginControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Visibility="Collapsed">
+
+    <Grid>
+        <Border Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Width="500"
+                MaxHeight="600"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Padding="24">
+            <Border.Shadow>
+                <ThemeShadow/>
+            </Border.Shadow>
+            <Grid RowSpacing="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header with icon and title -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="16">
+                    <Image x:Name="AppIcon" Width="64" Height="64"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Notepad" FontWeight="Bold" FontSize="24"/>
+                        <TextBlock x:Name="VersionText" FontSize="12" Opacity="0.7" Text="Version 1.0.0"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Description -->
+                <TextBlock Grid.Row="1" TextWrapping="Wrap" Opacity="0.9">
+                    Simple notepad application for Windows.
+                </TextBlock>
+
+                <!-- Licenses ScrollViewer - dynamically populated -->
+                <ScrollViewer Grid.Row="2" MaxHeight="300" Padding="0,0,8,0">
+                    <StackPanel x:Name="LicensesPanel" Spacing="16">
+                        <!-- Content will be generated from LICENSE.txt -->
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Footer buttons -->
+                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                    <HyperlinkButton Content="View Full License" Click="ViewLicense_Click" Padding="8,4"/>
+                    <Button Content="Close" Style="{ThemeResource AccentButtonStyle}" Click="Close_Click" MinWidth="80"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
